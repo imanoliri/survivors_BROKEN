@@ -21,17 +21,6 @@ def img_rgb_2_tile(image: np.array, *args, **kwargs) -> Tile:
     Returns:
         Tile: Tile corresponding to this image.
     """
-    # If at least 10% is water, just define as Lake
-    classifications = []
-    for x in range(image.shape[0]):
-        for y in range(image.shape[1]):
-            classifications.append(
-                closest_tile_for_color(image[x, y], *args, **kwargs))
-
-    water_pixels = sum(t == 'L' for t in classifications)
-    if water_pixels / len(classifications) >= 0.05:
-        return 'L'
-
     return closest_tile_for_color(image.mean(axis=(0, 1)), *args, **kwargs)
 
 
