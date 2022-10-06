@@ -1,0 +1,10 @@
+[
+    {
+        "filepath": "cards.xlsx",
+        "sheetname": "event_cards"
+    },
+    {
+        "filepath": "cards.xlsx",
+        "sheetname": "player_cards"
+    }
+]
