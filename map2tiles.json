@@ -1,6 +1,6 @@
 {
-    "image_filepath": "BS_H_square.jpg",
+    "image_filepath": "maps/BS_H_square.jpg",
     "x_tiles": 14,
     "y_tiles": 14,
-    "tile_info_filepath": "tile_info.json"
+    "tile_info_filepath": "data/tile_info.json"
 }
