@@ -1,5 +1,5 @@
 {
-    "gamelog_filepath": "gamelog.txt",
+    "gamelog_filepath": "gamelog.html",
     "players": 5,
     "until_no_cards": false,
     "game_excel_filepath": "game.xlsx",

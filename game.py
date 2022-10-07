@@ -7,7 +7,6 @@ from tiles import image_file_to_tilemap_file
 import json
 import pandas as pd
 from typing import List
-import os
 
 
 def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
@@ -15,8 +14,6 @@ def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
 
     # Define CardStacks and start with clean gamelog
     event_card_stack, player_card_stack = card_stacks
-    if os.path.isfile(gamelog_filepath):
-        os.remove(gamelog_filepath)
     gamelog = pd.DataFrame([], columns=['event'])
 
     # Rounds loop
@@ -27,7 +24,7 @@ def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
             event_card_stack,
             gamelog,
             gamelog_filepath,
-            premessage=f'\n--- Turn {round}')
+            premessage=f'\n------ Turn {round} ------')
 
         play = not game_finished(
             *args, card_stacks=[event_card_stack, player_card_stack], **kwargs)
@@ -40,7 +37,7 @@ def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
                 player_card_stack,
                 gamelog,
                 gamelog_filepath,
-                premessage=f'\n- Player {player}')
+                premessage=f'\n> Player {player}')
 
             play = not game_finished(
                 *args,
@@ -82,7 +79,7 @@ def deal_card_update_and_save_gamelog(card_stack: CardStack,
     # Save game log
     with open(gamelog_filepath, 'w') as f:
         lines = '\n'.join(gl.event.values.tolist())
-        f.writelines(f"\n{lines}")
+        f.write(f'<span style="white-space: pre-line">\n{lines}</span>')
 
     # Print card and wait for response
     print('\n'.join(lines_to_print))
