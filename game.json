@@ -1,0 +1,8 @@
+{
+    "gamelog_filepath": "gamelog.txt",
+    "players": 5,
+    "until_no_cards": false,
+    "game_excel_filepath": "game.xlsx",
+    "players_sheetname": "players",
+    "map_sheetname": "map"
+}

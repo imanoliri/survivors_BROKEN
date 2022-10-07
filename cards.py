@@ -30,11 +30,15 @@ class CardStack():
         self.dealt_cards.append(card)
         return card
 
-    def print_card(self, card):
+    def card_print_strings(self, card):
         cd = self.card_types.loc[card, ['name', 'description']]
-        cd_print = ['\n']
-        cd_print += cd.values.tolist()
-        print('\n'.join(cd_print))
+        return cd.values.tolist()
+
+    def card_print_string(self, card):
+        return '\n'.join(self.card_print_strings(card))
+
+    def print_card(self, card):
+        print(f'\n{self.card_print_string(card)}')
 
     def _get_fresh_cards(self):
         cards = []
