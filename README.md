@@ -1,6 +1,8 @@
 # Survivors
 The party survival board and card game
 
+See the word version in `documentation/"Survivors - the party survival board and card game.docx"`
+
 "Survivors"" is a board and card game where each player leads a party of survivors with the objective to survive the apocalypse, whether it be via cooperation or competition with each other. The final goal is to be either the last party standing or have the biggest party when the cards run out.
 
 The positive aspect of cooperation is specialization and more efficient use of resources (economies of scale) and the positive aspect of competition is to gain control over limited resources.
