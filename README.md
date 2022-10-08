@@ -40,6 +40,7 @@ Resources are first produced (usually by buildings or survivors assigned to a ta
 You can perform one activity per each 3 survivors (that aren’t active scavengers), rounding up:
 - Build: costs in building card. 3 survivors will be attached to this activity and cannot be used for another. If you don’t have tools for all 3, the building will take 2 turns to complete. You cannot actively use the building the same turn it’s finished.
 - Gather: each tile yields a certain amount of resources you can gather directly or using a building (see the “info.xlsx” excel).
+- Look for survivors: invest 5 food to search for survivors and find 1.
 - Create/disband attack party (no activity cost)
 - Move attack party: 5 tiles per turn. If you move into another party you can attack it without any activity cost. The other player can choose to trigger the combat, even if it’s not their turn. Same rules apply to player bases.
 - Attack another party: it can be another attack party and then a fight will be triggered. If you attack a player’s base or building, a combat with its inhabitants/workers (in case of a base, it’s all the players idle survivors) is triggered. If you win that building can be either destroyed or put under your control.
