@@ -6,6 +6,7 @@ import math
 import numpy as np
 from PIL import Image
 from typing import Tuple
+import pandas as pd
 
 Tile = str
 TileMap = np.array
@@ -21,7 +22,42 @@ def img_rgb_2_tile(image: np.array, *args, **kwargs) -> Tile:
     Returns:
         Tile: Tile corresponding to this image.
     """
-    return closest_tile_for_color(image.mean(axis=(0, 1)), *args, **kwargs)
+    # Get the most probable classification for all pixels
+    classifications = []
+    for x in range(image.shape[0]):
+        for y in range(image.shape[1]):
+            classifications.append(
+                closest_tile_for_color(image[x, y], *args, **kwargs))
+
+    # Get distribution of classifications
+    df_classifications = pd.Series(classifications, name='tile')
+    classification_counts = df_classifications.value_counts(normalize=True,
+                                                            sort=True)
+    # Get tile type from classification counts
+    return tile_type_from_classification_counts(classification_counts)
+
+
+def tile_type_from_classification_counts(counts: pd.Series) -> str:
+    """
+    Tile will be either the top classification count.
+    If the difference with the second is not so big, the Tile will be both classes at the same time.
+    If the 1st and second are Water ('L') and Wood ('W'), the Tile will be a Swamp ('S')
+    """
+    tiles = counts.index.values
+    counts = counts.values.tolist()
+    tile = tiles[0]
+    if len(counts):
+        return tile
+
+    rel_difference_1_2_options = abs(counts[0] - counts[1]) / counts[0]
+    if rel_difference_1_2_options < 0.2:
+        first_class = tiles[0]
+        second_class = tiles[1]
+        if first_class == 'L' and second_class == 'W':
+            tile = 'S'
+        else:
+            tile = f'{first_class}/{second_class}'
+    return tile
 
 
 def closest_tile_for_color(rgb: Tuple[float], tile_info: dict) -> Tile:
