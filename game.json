@@ -1,6 +1,6 @@
 {
     "gamelog_filepath": "gamelog.html",
-    "players": 5,
+    "players": 2,
     "until_no_cards": false,
     "game_excel_filepath": "game.xlsx",
     "players_sheetname": "players",
