@@ -53,6 +53,7 @@ def game_finished(game_excel_filepath: str, players_sheetname: str,
                   card_stacks: List[CardStack], until_no_cards: bool, *args,
                   **kwargs) -> bool:
 
+    return False
     # If playing until no cards and any CardStack is empty
     if until_no_cards:
         if any(not cs.cards for cs in card_stacks):
