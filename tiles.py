@@ -73,17 +73,15 @@ def closest_tile_for_color(rgb: Tuple[float], tile_info: dict) -> Tile:
     """
     r, g, b = rgb
     diffs_and_letters = []
-    for letter, color in tile_info.values():
+    for name, letter, color in tile_info.values:
         cr, cg, cb = color
         color_diff = math.sqrt((r - cr)**2 + (g - cg)**2 + (b - cb)**2)
         diffs_and_letters.append((color_diff, letter))
     return min(diffs_and_letters)[1]
 
 
-def image_to_tilemap(image: np.ndarray,
-                     x_tiles: int,
-                     y_tiles: int,
-                     tile_info_filepath: str = 'tile_info.json') -> TileMap:
+def image_to_tilemap(image: np.ndarray, x_tiles: int, y_tiles: int,
+                     tile_info_kwargs: dict) -> TileMap:
     """
     This function converts the image to a TileMap.
 
@@ -91,15 +89,21 @@ def image_to_tilemap(image: np.ndarray,
         image (np.ndarray): Array of RGB values of the image.
         x_tiles (int): Number of horizontal tiles to divide the map into.
         y_tiles (int): Number of vertical tiles to divide the map into.
-        tile_info_filepath (str, optional): Where to load the information regarding each type of Tile.
+        tile_info_kwargs (dict): Where to load the information from regarding each type of Tile using pandas.read_excel().
             Defaults to 'tile_info.json'.
 
     Returns:
         TileMap: Converted map.
     """
 
-    with open(tile_info_filepath, "r") as fp:
-        tile_info = json.load(fp)
+    with open(tile_info_kwargs["filepath"], 'rb') as fp:
+        tile_info = pd.read_excel(fp,
+                                  tile_info_kwargs["sheetname"],
+                                  index_col=0)
+        tile_info.color = [
+            tuple(int(c) for c in color[1:-1].split(','))
+            for color in tile_info.color
+        ]
 
     # Read and fill map tiles
     tilemap = np.empty(dtype='str', shape=(x_tiles, y_tiles))
