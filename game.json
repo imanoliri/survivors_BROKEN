@@ -1,8 +1,8 @@
 {
     "gamelog_filepath": "gamelog.html",
     "players": 2,
-    "until_no_cards": false,
-    "game_spreadsheet_id": "17CQcMDPTnqCPqQ8_QfJ2apFUB7VPoofmUm3GVWT7-Zo",
+    "until_no_cards": true,
+    "game_spreadsheet_id": "1p1SfzcnWcfDjG-jYdE7vqA1xRM2nnD0DF_5j6TmdJkA",
     "players_sheetname": "players",
     "map_sheetname": "map"
 }

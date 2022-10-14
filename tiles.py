@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from typing import Tuple
 import pandas as pd
+from pathlib import Path
 
 Tile = str
 TileMap = np.array
@@ -81,7 +82,7 @@ def closest_tile_for_color(rgb: Tuple[float], tile_info: dict) -> Tile:
 
 
 def image_to_tilemap(image: np.ndarray, x_tiles: int, y_tiles: int,
-                     tile_info_kwargs: dict) -> TileMap:
+                     tile_info_kwargs: dict, *args, **kwargs) -> TileMap:
     """
     This function converts the image to a TileMap.
 
@@ -118,10 +119,25 @@ def image_to_tilemap(image: np.ndarray, x_tiles: int, y_tiles: int,
     return tilemap
 
 
-def image_file_to_tilemap_file(image_filepath: str,
-                               miniature: bool = True,
-                               *args,
-                               **kwargs):
+def tilemap_tile_counts(tmap: TileMap, filepath: str, tile_info_kwargs: dict,
+                        *args, **kwargs):
+
+    # Counts
+    counts = zip(*np.unique(tmap, return_counts=True))
+    with open(tile_info_kwargs["filepath"], 'rb') as fp:
+        tile_counts = pd.read_excel(fp,
+                                    tile_info_kwargs["sheetname"],
+                                    index_col=0)
+    tile_counts = tile_counts.iloc[:, 1].to_frame()
+    tile_counts['count'] = 0
+    for tile, count in counts:
+        tile_counts.loc[tile_counts.letter == tile, 'count'] = count
+
+    # Save to map bank
+    np.savetxt(filepath, tile_counts, delimiter=",", fmt='%s')
+
+
+def image_file_to_tilemap_file(image_filepath: str, *args, **kwargs):
     """
     This function reads a target image, which is expected to be a google maps snippet
     and saves it as a TileMap to a csv.
@@ -132,11 +148,16 @@ def image_file_to_tilemap_file(image_filepath: str,
         img = Image.open(fp)
         img = np.array(img)
 
-    # Convert image to tilemap
-    tilemap = image_to_tilemap(img, *args, **kwargs)
+    # Convert image to tilemap (if not yet done)
+    tilemap_filepath = f"{image_filepath.split('.')[0]}.csv"
+    if not Path(tilemap_filepath).is_file():
+        tilemap = image_to_tilemap(img, *args, **kwargs)
+        np.savetxt(tilemap_filepath, tilemap, delimiter=",", fmt='%s')
 
-    # Save tilemap to csv
-    np.savetxt(f"{image_filepath.split('.')[0]}.csv",
-               tilemap,
-               delimiter=",",
-               fmt='%s')
+    # Create and save tile counts to excel (if not yet done)
+    tilemap_tile_counts_filepath = f"{image_filepath.split('.')[0]}_tile_counts.csv"
+    if not Path(tilemap_tile_counts_filepath).is_file():
+        if tilemap is None:
+            tilemap = image_to_tilemap(img, *args, **kwargs)
+        tilemap_tile_counts(tilemap, tilemap_tile_counts_filepath, *args,
+                            **kwargs)

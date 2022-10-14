@@ -1,5 +1,5 @@
 {
-    "image_filepath": "maps/BS_H_square.jpg",
+    "maps_directory": "maps",
     "x_tiles": 14,
     "y_tiles": 14,
     "tile_info_kwargs": {
