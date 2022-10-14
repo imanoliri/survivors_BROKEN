@@ -83,9 +83,8 @@ def game_finished(game_spreadsheet_id: str, players_sheetname: str,
                     'They have to agree to share the victory or no one wins.'
                 ]
 
-            lines_to_print = [
-                'The game finishes because the cards are finished.'
-            ] + winner_lines
+            lines_to_print = ['', 'GAME END', '', 'The cards are finished.'
+                              ] + winner_lines
             gamelog = add_lines_to_gamelog_and_print_them(
                 lines_to_print, gamelog, gamelog_filepath)
             return True
@@ -101,8 +100,8 @@ def game_finished(game_spreadsheet_id: str, players_sheetname: str,
             lines_to_print = [
                 f'All players are dead and no one wins the game...'
             ]
-        gamelog = add_lines_to_gamelog_and_print_them(lines_to_print, gamelog,
-                                                      gamelog_filepath)
+        gamelog = add_lines_to_gamelog_and_print_them(
+            ['', 'GAME END', ''] + lines_to_print, gamelog, gamelog_filepath)
         return True
     return False
 
