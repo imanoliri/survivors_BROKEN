@@ -27,7 +27,11 @@ def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
             premessage=f'\n------ Turn {round} ------')
 
         play = not game_finished(
-            *args, card_stacks=[event_card_stack, player_card_stack], **kwargs)
+            *args,
+            gamelog=gamelog,
+            gamelog_filepath=gamelog_filepath,
+            card_stacks=[event_card_stack, player_card_stack],
+            **kwargs)
         if not play:
             break
 
@@ -41,6 +45,8 @@ def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
 
             play = not game_finished(
                 *args,
+                gamelog=gamelog,
+                gamelog_filepath=gamelog_filepath,
                 card_stacks=[event_card_stack, player_card_stack],
                 **kwargs)
             if not play:
@@ -49,48 +55,87 @@ def play_game(card_stacks: List[CardStack], gamelog_filepath: str,
         round += 1
 
 
-def game_finished(game_excel_filepath: str, players_sheetname: str,
+def game_finished(game_spreadsheet_id: str, players_sheetname: str,
+                  gamelog: pd.DataFrame, gamelog_filepath: str,
                   card_stacks: List[CardStack], until_no_cards: bool, *args,
                   **kwargs) -> bool:
 
-    return False
-    # If playing until no cards and any CardStack is empty
+    url = f"https://docs.google.com/spreadsheets/d/{game_spreadsheet_id}/gviz/tq?tqx=out:csv&sheet={players_sheetname}"
+    player_data = pd.read_csv(url)
+
+    # If playing until no cards and check victory points for winners
     if until_no_cards:
         if any(not cs.cards for cs in card_stacks):
+            max_vp = max(player_data.points)
+            winners = player_data.loc[player_data.points == max_vp]
+            if len(winners) == 1:
+                winner_lines = [
+                    f'The winner by victory points is {winners.name.iloc[0]}!'
+                ]
+            elif len(winners) > 1:
+                winner_lines = [
+                    f'There is a stalemate between {", ".join(n for n in winners.name)}!',
+                    'They have to agree to share the victory or no one wins.'
+                ]
+
+            lines_to_print = [
+                'The game finishes because the cards are finished.'
+            ] + winner_lines
+            add_lines_to_gamelog_and_print_them(lines_to_print, gamelog,
+                                                gamelog_filepath)
             return True
 
     # If 1 or less players have survivors left
-    player_data = pd.read_excel(game_excel_filepath, players_sheetname)
-    if sum(s > 0 for s in player_data.survivors) <= 1:
+    winners = player_data.loc[player_data.survivors > 0]
+    if len(winners) <= 1:
+        if len(winners) == 1:
+            lines_to_print = [
+                f'Only {winners.name.iloc[0]} remains and wins the game!'
+            ]
+        elif len(winners) == 0:
+            lines_to_print = [
+                f'All players are dead and no one wins the game...'
+            ]
+        add_lines_to_gamelog_and_print_them(lines_to_print, gamelog,
+                                            gamelog_filepath)
         return True
     return False
 
 
 def deal_card_update_and_save_gamelog(card_stack: CardStack,
-                                      gl: pd.DataFrame,
+                                      gamelog: pd.DataFrame,
                                       gamelog_filepath: str,
                                       premessage: str = None):
     # Deal card, update game log
     lines_to_print = card_stack.card_print_strings(card_stack.deal_card())
     if premessage:
         lines_to_print = [premessage] + lines_to_print
+
+    add_lines_to_gamelog_and_print_them(lines_to_print, gamelog,
+                                        gamelog_filepath)
+    i = input('Enter to continue')
+
+    return gamelog
+
+
+def add_lines_to_gamelog_and_print_them(lines_to_print: List[str],
+                                        gamelog: pd.DataFrame,
+                                        gamelog_filepath: str):
+    # Update gamelog
     for cprint in lines_to_print:
-        gl = add_text_to_game_log(gl, cprint)
+        gamelog = add_text_to_game_log(gamelog, cprint)
 
     # Save game log
     with open(gamelog_filepath, 'w') as f:
-        lines = '\n'.join(gl.event.values.tolist())
+        lines = '\n'.join(gamelog.event.values.tolist())
         f.write(f'<span style="white-space: pre-line">\n{lines}</span>')
 
-    # Print card and wait for response
+    # Print lines
     print('\n'.join(lines_to_print))
-    i = input('Enter to continue')
-
-    return gl
 
 
-def add_text_to_game_log(gl: pd.DataFrame, txt: str):
-    return pd.concat([gl, pd.DataFrame([txt], columns=['event'])],
+def add_text_to_game_log(gamelog: pd.DataFrame, txt: str):
+    return pd.concat([gamelog, pd.DataFrame([txt], columns=['event'])],
                      axis=0,
                      ignore_index=True)
 

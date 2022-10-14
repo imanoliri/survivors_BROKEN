@@ -2,7 +2,7 @@
     "gamelog_filepath": "gamelog.html",
     "players": 2,
     "until_no_cards": false,
-    "game_excel_filepath": "game.xlsx",
+    "game_spreadsheet_id": "17CQcMDPTnqCPqQ8_QfJ2apFUB7VPoofmUm3GVWT7-Zo",
     "players_sheetname": "players",
     "map_sheetname": "map"
 }
