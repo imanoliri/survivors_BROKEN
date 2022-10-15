@@ -81,7 +81,7 @@ def closest_tile_for_color(rgb: Tuple[float], tile_info: dict) -> Tile:
     return min(diffs_and_letters)[1]
 
 
-def image_to_tilemap(image: np.ndarray, x_tiles: int, y_tiles: int,
+def image_to_tilemap(image: np.ndarray, map_tile_number: int,
                      tile_info_kwargs: dict, *args, **kwargs) -> TileMap:
     """
     This function converts the image to a TileMap.
@@ -107,14 +107,18 @@ def image_to_tilemap(image: np.ndarray, x_tiles: int, y_tiles: int,
         ]
 
     # Read and fill map tiles
-    tilemap = np.empty(dtype='str', shape=(x_tiles, y_tiles))
-    x_resol = math.floor(image.shape[0] / x_tiles)
-    y_resol = math.floor(image.shape[1] / y_tiles)
+    ratio = image.shape[1] / image.shape[0]
+    x_tiles = math.floor(math.sqrt(map_tile_number * ratio))
+    y_tiles = math.floor(map_tile_number / x_tiles)
+
+    tilemap = np.empty(dtype='str', shape=(y_tiles, x_tiles))
+    x_resol = math.floor(image.shape[1] / x_tiles)
+    y_resol = math.floor(image.shape[0] / y_tiles)
     for x in range(x_tiles):
         for y in range(y_tiles):
-            img_tile = image[x * x_resol:(x + 1) * x_resol,
-                             y * y_resol:(y + 1) * y_resol]
-            tilemap[x, y] = img_rgb_2_tile(img_tile, tile_info)
+            img_tile = image[y * y_resol:(y + 1) * y_resol,
+                             x * x_resol:(x + 1) * x_resol]
+            tilemap[y, x] = img_rgb_2_tile(img_tile, tile_info)
 
     return tilemap
 
