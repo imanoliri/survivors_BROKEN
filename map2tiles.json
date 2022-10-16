@@ -2,6 +2,7 @@
     "maps_directory": "maps",
     "overwrite": true,
     "map_tile_number": 200,
+    "labeled_tiles_path": "maps/labeled_tiles",
     "image_alpha": 0.7,
     "tile_info_kwargs": {
         "filepath": "data/game.xlsx",

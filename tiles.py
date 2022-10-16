@@ -9,6 +9,8 @@ from typing import Iterator, Tuple
 import pandas as pd
 from pathlib import Path
 import os
+from os import listdir
+from os.path import isfile, join
 
 Tile = str
 
@@ -19,46 +21,26 @@ class TileMap():
     image: np.ndarray = None
     tile_number: int = None
     tile_info: pd.DataFrame = None
+    labeled_tile_images_path: str = None
+
     tiles: np.ndarray = None
     tile_x_pixels: int = None
     tile_y_pixels: int = None
+    labeled_tile_images: dict = None
 
     def __post_init__(self):
         if self.tiles is None:
+            if self.labeled_tile_images is None and self.labeled_tile_images_path is not None:
+                self.labeled_tile_images = self._load_images_from_directory(
+                    self.labeled_tile_images_path)
             self.tiles = self._tiles_from_image()
+            self.labeled_tile_images = None
 
-    @property
-    def tile_counts(self) -> pd.DataFrame:
-
-        if self.tiles is None:
-            raise ValueError('No defined Tiles to count in this TileMap.')
-        # Counts
-        counts = zip(*np.unique(self.tiles, return_counts=True))
-        tile_counts = self.tile_info.copy(deep=True)
-        tile_counts = tile_counts.iloc[:, 1].to_frame()
-        tile_counts['count'] = 0
-        for tile, count in counts:
-            tile_counts.loc[tile_counts.letter == tile, 'count'] = count
-
-        return tile_counts
-
-    def tile_images(self) -> Iterator:
-        return (Image.fromarray(x) for x in self.tile_rgbs())
-
-    def tile_rgbs(self) -> Iterator[np.ndarray]:
-        return (
-            x
-            for x in self._tile_images_from_rgb(self.image, *self.tiles.shape))
-
-    def _tile_images_from_rgb(self, image_rgb: np.ndarray, x_tiles: int,
-                              y_tiles: int) -> Iterator[np.ndarray]:
-
-        x_resol = math.floor(image_rgb.shape[1] / x_tiles)
-        y_resol = math.floor(image_rgb.shape[0] / y_tiles)
-        for x in range(x_tiles):
-            for y in range(y_tiles):
-                yield image_rgb[y * y_resol:(y + 1) * y_resol,
-                                x * x_resol:(x + 1) * x_resol]
+    def _load_images_from_directory(dir: str) -> list:
+        return [
+            Image.open(f) for f in listdir(dir)
+            if isfile(join(dir, f)) and f.endswith('.jpg')
+        ]
 
     def _tiles_from_image(self) -> np.ndarray:
         image = self.image
@@ -73,6 +55,16 @@ class TileMap():
                  for img_tile in self._tile_images_from_rgb(
                      image_rgb, x_tiles, y_tiles))
         return np.array(list(tiles), dtype='str').reshape(y_tiles, x_tiles)
+
+    def _tile_images_from_rgb(self, image_rgb: np.ndarray, x_tiles: int,
+                              y_tiles: int) -> Iterator[np.ndarray]:
+
+        x_resol = math.floor(image_rgb.shape[1] / x_tiles)
+        y_resol = math.floor(image_rgb.shape[0] / y_tiles)
+        for x in range(x_tiles):
+            for y in range(y_tiles):
+                yield image_rgb[y * y_resol:(y + 1) * y_resol,
+                                x * x_resol:(x + 1) * x_resol]
 
     def _img_rgb_2_tile(self, image: np.ndarray) -> Tile:
         """
@@ -139,6 +131,29 @@ class TileMap():
                 tile = f'{first_class}/{second_class}'
         return tile
 
+    @property
+    def tile_counts(self) -> pd.DataFrame:
+
+        if self.tiles is None:
+            raise ValueError('No defined Tiles to count in this TileMap.')
+        # Counts
+        counts = zip(*np.unique(self.tiles, return_counts=True))
+        tile_counts = self.tile_info.copy(deep=True)
+        tile_counts = tile_counts.iloc[:, 1].to_frame()
+        tile_counts['count'] = 0
+        for tile, count in counts:
+            tile_counts.loc[tile_counts.letter == tile, 'count'] = count
+
+        return tile_counts
+
+    def tile_images(self) -> Iterator:
+        return (Image.fromarray(x) for x in self.tile_rgbs())
+
+    def tile_rgbs(self) -> Iterator[np.ndarray]:
+        return (
+            x
+            for x in self._tile_images_from_rgb(self.image, *self.tiles.shape))
+
     def to_excel(self, fp: str, image_alpha: float = 0.7):
         sheet_name = 'map'
         df_tiles = pd.DataFrame(self.tiles)
@@ -177,52 +192,3 @@ class TileMap():
             imag_str = f'{directory}/{filename}_{i}.jpg'
             Path(imag_str).mkdir(parents=True, exist_ok=True)
             tile_img.save(imag_str)
-
-
-def image_file_to_tilemap_file(image_filepath: str, overwrite: bool,
-                               map_tile_number: int, tile_info_kwargs: dict,
-                               image_alpha: float, *args, **kwargs):
-    """
-    This function reads a target image, which is expected to be a google maps snippet
-    and saves it as a TileMap to a csv.
-    """
-
-    # Load image and tile information
-    image, tile_info = get_image_and_tile_info(image_filepath,
-                                               tile_info_kwargs)
-
-    # Convert image to tilemap (if not yet done)
-    tilemap_filepath = f"{image_filepath.split('.')[0]}.xlsx"
-    tilemap_fps = tilemap_filepath.split('/')
-    tilemap_fps.insert(-1, 'tilemaps')
-    tilemap_filepath = '/'.join(tilemap_fps)
-    Path('/'.join(tilemap_filepath.split('/')[:-1])).mkdir(parents=True,
-                                                           exist_ok=True)
-
-    tilemap = None
-    if not Path(tilemap_filepath).is_file() or overwrite:
-        tilemap = TileMap(image, map_tile_number, tile_info)
-        tilemap.to_excel(tilemap_filepath, image_alpha)
-
-    # Create and save tile counts to excel (if not yet done)
-    tilemap_tile_counts_filepath = f"{tilemap_filepath.split('.')[0]}_tile_counts.xlsx"
-    if not Path(tilemap_tile_counts_filepath).is_file() or overwrite:
-        if tilemap is None:
-            tilemap = TileMap(image, map_tile_number, tile_info)
-        tilemap.tile_counts.to_excel(tilemap_tile_counts_filepath, index=False)
-
-
-def get_image_and_tile_info(image_filepath: str,
-                            tile_info_kwargs: dict) -> tuple:
-    with open(image_filepath, "rb") as fp:
-        image = Image.open(fp)
-        image = np.array(image)
-    with open(tile_info_kwargs["filepath"], 'rb') as fp:
-        tile_info = pd.read_excel(fp,
-                                  tile_info_kwargs["sheetname"],
-                                  index_col=0)
-        tile_info.color = [
-            tuple(int(c) for c in color[1:-1].split(','))
-            for color in tile_info.color
-        ]
-    return image, tile_info
