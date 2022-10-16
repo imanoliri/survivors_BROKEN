@@ -4,3 +4,5 @@ gamelog.html
 game.json
 game.xlsx
 *.gsheet
+
+maps/labeled_tiles/*/**.jpg

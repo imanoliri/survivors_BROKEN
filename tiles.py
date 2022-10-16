@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import math
 import numpy as np
 from PIL import Image
-from typing import Tuple
+from typing import Iterator, Tuple
 import pandas as pd
 from pathlib import Path
 import os
@@ -19,7 +19,7 @@ class TileMap():
     image: np.ndarray = None
     tile_number: int = None
     tile_info: pd.DataFrame = None
-    tiles: np.array = None
+    tiles: np.ndarray = None
     tile_x_pixels: int = None
     tile_y_pixels: int = None
 
@@ -42,30 +42,44 @@ class TileMap():
 
         return tile_counts
 
-    def _tiles_from_image(self) -> np.array:
+    def tile_images(self) -> Iterator:
+        return (Image.fromarray(x) for x in self.tile_rgbs())
+
+    def tile_rgbs(self) -> Iterator[np.ndarray]:
+        return (
+            x
+            for x in self._tile_images_from_rgb(self.image, *self.tiles.shape))
+
+    def _tile_images_from_rgb(self, image_rgb: np.ndarray, x_tiles: int,
+                              y_tiles: int) -> Iterator[np.ndarray]:
+
+        x_resol = math.floor(image_rgb.shape[1] / x_tiles)
+        y_resol = math.floor(image_rgb.shape[0] / y_tiles)
+        for x in range(x_tiles):
+            for y in range(y_tiles):
+                yield image_rgb[y * y_resol:(y + 1) * y_resol,
+                                x * x_resol:(x + 1) * x_resol]
+
+    def _tiles_from_image(self) -> np.ndarray:
         image = self.image
         ratio = image.shape[1] / image.shape[0]
         x_tiles = math.floor(math.sqrt(self.tile_number * ratio))
         y_tiles = math.floor(self.tile_number / x_tiles)
+        return self._rgb_2_tiles(image, x_tiles, y_tiles)
 
-        tiles = np.empty(dtype='str', shape=(y_tiles, x_tiles))
-        x_resol = math.floor(image.shape[1] / x_tiles)
-        y_resol = math.floor(image.shape[0] / y_tiles)
-        self.tile_x_pixels = x_resol
-        self.tile_y_pixels = y_resol
-        for x in range(x_tiles):
-            for y in range(y_tiles):
-                img_tile = image[y * y_resol:(y + 1) * y_resol,
-                                 x * x_resol:(x + 1) * x_resol]
-                tiles[y, x] = self._img_rgb_2_tile(img_tile)
-        return tiles
+    def _rgb_2_tiles(self, image_rgb: np.ndarray, x_tiles: int,
+                     y_tiles: int) -> np.ndarray:
+        tiles = (self._img_rgb_2_tile(img_tile)
+                 for img_tile in self._tile_images_from_rgb(
+                     image_rgb, x_tiles, y_tiles))
+        return np.array(list(tiles), dtype='str').reshape(y_tiles, x_tiles)
 
-    def _img_rgb_2_tile(self, image: np.array) -> Tile:
+    def _img_rgb_2_tile(self, image: np.ndarray) -> Tile:
         """
         Convert the passed RGB-array to a single tile, by checking its mean color against all possible Tiles.
 
         Args:
-            image (np.array): RGB-array.
+            image (np.ndarray): RGB-array.
 
         Returns:
             Tile: Tile corresponding to this image.
@@ -156,6 +170,13 @@ class TileMap():
             image_rgba.save(alpha_image_filepath)
             worksheet.insert_image('A1', alpha_image_filepath)
         os.remove(alpha_image_filepath)
+
+    def save_tile_images(self, directory: str, filename: str):
+
+        for i, tile_img in enumerate(self.tile_images()):
+            imag_str = f'{directory}/{filename}_{i}.jpg'
+            Path(imag_str).mkdir(parents=True, exist_ok=True)
+            tile_img.save(imag_str)
 
 
 def image_file_to_tilemap_file(image_filepath: str, overwrite: bool,
