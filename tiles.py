@@ -158,9 +158,9 @@ class TileMap():
         os.remove(alpha_image_filepath)
 
 
-def image_file_to_tilemap_file(image_filepath: str, map_tile_number: int,
-                               tile_info_kwargs: dict, image_alpha: float,
-                               *args, **kwargs):
+def image_file_to_tilemap_file(image_filepath: str, overwrite: bool,
+                               map_tile_number: int, tile_info_kwargs: dict,
+                               image_alpha: float, *args, **kwargs):
     """
     This function reads a target image, which is expected to be a google maps snippet
     and saves it as a TileMap to a csv.
@@ -179,13 +179,13 @@ def image_file_to_tilemap_file(image_filepath: str, map_tile_number: int,
                                                            exist_ok=True)
 
     tilemap = None
-    if not Path(tilemap_filepath).is_file():
+    if not Path(tilemap_filepath).is_file() or overwrite:
         tilemap = TileMap(image, map_tile_number, tile_info)
         tilemap.to_excel(tilemap_filepath, image_alpha)
 
     # Create and save tile counts to excel (if not yet done)
     tilemap_tile_counts_filepath = f"{tilemap_filepath.split('.')[0]}_tile_counts.xlsx"
-    if not Path(tilemap_tile_counts_filepath).is_file():
+    if not Path(tilemap_tile_counts_filepath).is_file() or overwrite:
         if tilemap is None:
             tilemap = TileMap(image, map_tile_number, tile_info)
         tilemap.tile_counts.to_excel(tilemap_tile_counts_filepath, index=False)

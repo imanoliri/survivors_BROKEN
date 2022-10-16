@@ -9,3 +9,6 @@ The *.jpg files are derive from the *.JPG ones and come in different variants:
 	- V: 3:4 ratio. For a map of size 200 tiles -> 16x12 tiles
 
 Feel free to add more yourself!
+
+The game programm will store the TileMaps and other information calculated from the maps in the "tilemaps" directory.
+These results will be reused by the program and if you want to get new ones, you should indicate it so in the related configuration file.

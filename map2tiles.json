@@ -1,5 +1,6 @@
 {
     "maps_directory": "maps",
+    "overwrite": false,
     "map_tile_number": 200,
     "image_alpha": 0.7,
     "tile_info_kwargs": {
