@@ -18,9 +18,8 @@ def main():
             game_kwargs = json.load(fp)
         gamelog_filepath = game_kwargs["gamelog_filepath"]
         gamelog = pd.DataFrame([], columns=['event'])
-        gamelog = add_lines_to_gamelog_and_print_them(['Starting "survivors"'],
-                                                      gamelog,
-                                                      gamelog_filepath)
+        gamelog = add_lines_to_gamelog_and_print_them(
+            ['<<<< Starting "survivors" >>>>'], gamelog, gamelog_filepath)
         return gamelog_filepath, gamelog
 
     def prepare_map(gamelog):
@@ -41,7 +40,8 @@ def main():
         sel_map_strings = ['Select a map:'] + map_sel_strings
         gamelog = add_lines_to_gamelog_and_print_them([''] + sel_map_strings,
                                                       gamelog,
-                                                      gamelog_filepath)
+                                                      gamelog_filepath,
+                                                      print_lines=False)
         selmap = int(
             input(f'Select a map:{sep}{sep.join(map_sel_strings)}{sep}--> '))
 
@@ -59,7 +59,7 @@ def main():
         ], gamelog, gamelog_filepath)
         image_file_to_tilemap_file(**map2tiles_kwargs)
         gamelog = add_lines_to_gamelog_and_print_them([
-            'Map created. You have to copy the map image and the csv with the same name to the UI of "game.xlsx"!'
+            'Map created. You have to copy the TileMap (maps/tilemaps > excel with the same name) to the UI of "game.xlsx"!'
         ], gamelog, gamelog_filepath)
 
         return gamelog

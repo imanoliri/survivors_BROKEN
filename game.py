@@ -121,7 +121,8 @@ def deal_card_update_and_save_gamelog(card_stack: CardStack,
 
 def add_lines_to_gamelog_and_print_them(lines_to_print: List[str],
                                         gamelog: pd.DataFrame,
-                                        gamelog_filepath: str):
+                                        gamelog_filepath: str,
+                                        print_lines: bool = True):
     # Update gamelog
     for cprint in lines_to_print:
         gamelog = add_text_to_game_log(gamelog, cprint)
@@ -132,7 +133,8 @@ def add_lines_to_gamelog_and_print_them(lines_to_print: List[str],
         f.write(f'<span style="white-space: pre-line">\n{lines}</span>')
 
     # Print lines
-    print('\n'.join(lines_to_print))
+    if print_lines:
+        print('\n'.join(lines_to_print))
 
     return gamelog
 

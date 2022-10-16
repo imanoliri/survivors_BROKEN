@@ -2,7 +2,6 @@
 This module handles Tiles for the Wasteland virtual tabletop game.
 """
 from dataclasses import dataclass
-import json
 import math
 import numpy as np
 from PIL import Image
@@ -21,6 +20,8 @@ class TileMap():
     tile_number: int = None
     tile_info: pd.DataFrame = None
     tiles: np.array = None
+    tile_x_pixels: int = None
+    tile_y_pixels: int = None
 
     def __post_init__(self):
         if self.tiles is None:
@@ -50,6 +51,8 @@ class TileMap():
         tiles = np.empty(dtype='str', shape=(y_tiles, x_tiles))
         x_resol = math.floor(image.shape[1] / x_tiles)
         y_resol = math.floor(image.shape[0] / y_tiles)
+        self.tile_x_pixels = x_resol
+        self.tile_y_pixels = y_resol
         for x in range(x_tiles):
             for y in range(y_tiles):
                 img_tile = image[y * y_resol:(y + 1) * y_resol,
@@ -122,28 +125,36 @@ class TileMap():
                 tile = f'{first_class}/{second_class}'
         return tile
 
-    def to_excel(self, fp: str, image_alpha: float = 0.3):
+    def to_excel(self, fp: str, image_alpha: float = 0.7):
         sheet_name = 'map'
         df_tiles = pd.DataFrame(self.tiles)
 
         # Tiles to excel
-        writer = pd.ExcelWriter(fp, engine='xlsxwriter')
-        df_tiles.to_excel(writer,
-                          sheet_name=sheet_name,
-                          index=False,
-                          header=False)
+        with pd.ExcelWriter(fp, engine='xlsxwriter') as writer:
+            df_tiles.to_excel(writer,
+                              sheet_name=sheet_name,
+                              index=False,
+                              header=False)
 
-        # Add image with alpha over tiles
-        alpha_image_filepath = f'{fp[:-5]}_alpha.png'
-        image = Image.fromarray(self.image)
-        image_rgba = image.convert("RGBA")
-        image_rgba.putalpha(int(image_alpha * 255))
-        image_rgba.save(alpha_image_filepath)
-        worksheet = writer.sheets[sheet_name]
-        worksheet.insert_image('A1', alpha_image_filepath)
+            # Adjust cell width, height and text center align
+            workbook = writer.book
+            worksheet = writer.sheets[sheet_name]
+            cell_format = workbook.add_format({
+                'align': 'center',
+                'valign': 'vcenter'
+            })
+            worksheet.set_column_pixels(0, self.tiles.shape[1],
+                                        self.tile_x_pixels, cell_format)
+            for r in range(self.tiles.shape[0]):
+                worksheet.set_row_pixels(r, self.tile_y_pixels, cell_format)
 
-        # Save to excel & remove temporary image
-        writer.save()
+            # Add image with alpha over tiles
+            alpha_image_filepath = f'{fp[:-5]}_alpha.png'
+            image = Image.fromarray(self.image)
+            image_rgba = image.convert("RGBA")
+            image_rgba.putalpha(int(image_alpha * 255))
+            image_rgba.save(alpha_image_filepath)
+            worksheet.insert_image('A1', alpha_image_filepath)
         os.remove(alpha_image_filepath)
 
 
@@ -161,13 +172,19 @@ def image_file_to_tilemap_file(image_filepath: str, map_tile_number: int,
 
     # Convert image to tilemap (if not yet done)
     tilemap_filepath = f"{image_filepath.split('.')[0]}.xlsx"
+    tilemap_fps = tilemap_filepath.split('/')
+    tilemap_fps.insert(-1, 'tilemaps')
+    tilemap_filepath = '/'.join(tilemap_fps)
+    Path('/'.join(tilemap_filepath.split('/')[:-1])).mkdir(parents=True,
+                                                           exist_ok=True)
+
     tilemap = None
     if not Path(tilemap_filepath).is_file():
         tilemap = TileMap(image, map_tile_number, tile_info)
         tilemap.to_excel(tilemap_filepath, image_alpha)
 
     # Create and save tile counts to excel (if not yet done)
-    tilemap_tile_counts_filepath = f"{image_filepath.split('.')[0]}_tile_counts.xlsx"
+    tilemap_tile_counts_filepath = f"{tilemap_filepath.split('.')[0]}_tile_counts.xlsx"
     if not Path(tilemap_tile_counts_filepath).is_file():
         if tilemap is None:
             tilemap = TileMap(image, map_tile_number, tile_info)

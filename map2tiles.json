@@ -1,7 +1,7 @@
 {
     "maps_directory": "maps",
     "map_tile_number": 200,
-    "image_alpha": 0.3,
+    "image_alpha": 0.7,
     "tile_info_kwargs": {
         "filepath": "data/game.xlsx",
         "sheetname": "tile_info"
