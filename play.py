@@ -38,13 +38,18 @@ def main():
         map_sel_strings = [
             f'{m}. {map_file}' for (m, map_file) in select_map.items()
         ]
-        selmap = int(
-            input(f'Select a map:{sep}{sep.join(map_sel_strings)}{sep}--> '))
-        sel_map_strings = ['Select a map:'
-                           ] + map_sel_strings + [f'--> {selmap}']
+        sel_map_strings = ['Select a map:'] + map_sel_strings
         gamelog = add_lines_to_gamelog_and_print_them([''] + sel_map_strings,
                                                       gamelog,
                                                       gamelog_filepath)
+        selmap = int(
+            input(f'Select a map:{sep}{sep.join(map_sel_strings)}{sep}--> '))
+
+        gamelog = add_lines_to_gamelog_and_print_them([f'--> {selmap}'],
+                                                      gamelog,
+                                                      gamelog_filepath)
+
+        selmap
 
         # Prepare chosen map
         map2tiles_kwargs['image_filepath'] = f'{mapdir}/{select_map[selmap]}'
