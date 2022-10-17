@@ -27,7 +27,7 @@ class TileMap():
     tile_x_pixels: int = None
     tile_y_pixels: int = None
     labeled_tile_images: dict = None
-    labeled_tile_images_colour_histograms: dict = None
+    labeled_tile_images_pixel_histograms: dict = None
 
     def __post_init__(self):
         if self.tiles is None:
@@ -58,8 +58,8 @@ class TileMap():
         # Select rgb_2_tile function to use!
         rgb_2_tile = self._rgb_2_tile_by_closest_color
         if self.labeled_tile_images is not None:
-            self.labeled_tile_images_colour_histograms = {
-                fp: self._colour_histograms_from_image(np.array(img))
+            self.labeled_tile_images_pixel_histograms = {
+                fp: self._pixel_histogram_from_image(np.array(img))
                 for fp, img in self.labeled_tile_images.items()
             }
             rgb_2_tile = self._rgb_2_tile_by_rgb_distributions
@@ -143,18 +143,31 @@ class TileMap():
             return np.stack([counts, bins[1:]])
 
         return np.stack([
-            hist_to_array(*np.histogram(colour, range=(0, 255)))
+            hist_to_array(*np.histogram(colour, range=(0, 256)))
             for colour in np.moveaxis(img, 2, 0)
         ])
 
+    @staticmethod
+    def _pixel_histogram_from_image(img: np.array):
+        pixel_range = 256
+        downscaling = 26
+        bins = math.ceil(pixel_range / downscaling)
+        pixel_histogram = np.empty(shape=(bins, bins, bins), dtype='uint8')
+        for x in range(img.shape[0]):
+            for y in range(img.shape[1]):
+                pixel = img[x, y, :]
+                pixel_bin = tuple(int(x / downscaling) for x in pixel)
+                pixel_histogram[pixel_bin] += 1
+        return pixel_histogram
+
     def _rgb_2_tile_by_rgb_distributions(self, image: np.ndarray) -> Tile:
         tiling = pd.DataFrame([
-            list(self.labeled_tile_images_colour_histograms),
-            list(self.labeled_tile_images_colour_histograms.values())
+            list(self.labeled_tile_images_pixel_histograms),
+            list(self.labeled_tile_images_pixel_histograms.values())
         ], ['filename', 'image']).T
         tiling['difference'] = [
-            self._mean_array_diference(
-                self._colour_histograms_from_image(image), np.array(l_image))
+            self._mean_array_diference(self._pixel_histogram_from_image(image),
+                                       np.array(l_image))
             for l_image in tiling.image
         ]
         closest_tiles = tiling.loc[tiling.difference ==
