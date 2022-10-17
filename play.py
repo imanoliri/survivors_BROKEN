@@ -3,7 +3,7 @@ This is the main script to play a game of "Survivors".
 """
 
 from cards import CardStack
-from tiles import image_file_to_tilemap_file
+from map2tiles import image_file_to_tilemap_file
 import json
 import pandas as pd
 from os import listdir

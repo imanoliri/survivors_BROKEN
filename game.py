@@ -3,7 +3,6 @@ This script plays a game, as per the json file of the same name.
 """
 
 from cards import CardStack
-from tiles import image_file_to_tilemap_file
 import pandas as pd
 from typing import List
 

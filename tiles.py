@@ -27,6 +27,7 @@ class TileMap():
     tile_x_pixels: int = None
     tile_y_pixels: int = None
     labeled_tile_images: dict = None
+    labeled_tile_images_colour_histograms: dict = None
 
     def __post_init__(self):
         if self.tiles is None:
@@ -36,11 +37,13 @@ class TileMap():
             self.tiles = self._tiles_from_image()
             self.labeled_tile_images = None
 
+    @staticmethod
     def _load_images_from_directory(dir: str) -> list:
-        return [
-            Image.open(f) for f in listdir(dir)
+        return {
+            f: Image.open(f'{dir}/{f}')
+            for f in listdir(dir)
             if isfile(join(dir, f)) and f.endswith('.jpg')
-        ]
+        }
 
     def _tiles_from_image(self) -> np.ndarray:
         image = self.image
@@ -51,7 +54,18 @@ class TileMap():
 
     def _rgb_2_tiles(self, image_rgb: np.ndarray, x_tiles: int,
                      y_tiles: int) -> np.ndarray:
-        tiles = (self._img_rgb_2_tile(img_tile)
+
+        # Select rgb_2_tile function to use!
+        rgb_2_tile = self._rgb_2_tile_by_closest_color
+        if self.labeled_tile_images is not None:
+            self.labeled_tile_images_colour_histograms = {
+                fp: self._colour_histograms_from_image(np.array(img))
+                for fp, img in self.labeled_tile_images.items()
+            }
+            rgb_2_tile = self._rgb_2_tile_by_rgb_distributions
+
+        # Apply rgb_2_tile to all Image tiles
+        tiles = (rgb_2_tile(img_tile)
                  for img_tile in self._tile_images_from_rgb(
                      image_rgb, x_tiles, y_tiles))
         return np.array(list(tiles), dtype='str').reshape(y_tiles, x_tiles)
@@ -66,16 +80,7 @@ class TileMap():
                 yield image_rgb[y * y_resol:(y + 1) * y_resol,
                                 x * x_resol:(x + 1) * x_resol]
 
-    def _img_rgb_2_tile(self, image: np.ndarray) -> Tile:
-        """
-        Convert the passed RGB-array to a single tile, by checking its mean color against all possible Tiles.
-
-        Args:
-            image (np.ndarray): RGB-array.
-
-        Returns:
-            Tile: Tile corresponding to this image.
-        """
+    def _rgb_2_tile_by_closest_color(self, image: np.ndarray) -> Tile:
         # Get the most probable classification for all pixels
         classifications = []
         for x in range(image.shape[0]):
@@ -130,6 +135,37 @@ class TileMap():
             else:
                 tile = f'{first_class}/{second_class}'
         return tile
+
+    @staticmethod
+    def _colour_histograms_from_image(img: np.array):
+
+        def hist_to_array(counts, bins):
+            return np.stack([counts, bins[1:]])
+
+        return np.stack([
+            hist_to_array(*np.histogram(colour, range=(0, 255)))
+            for colour in np.moveaxis(img, 2, 0)
+        ])
+
+    def _rgb_2_tile_by_rgb_distributions(self, image: np.ndarray) -> Tile:
+        tiling = pd.DataFrame([
+            list(self.labeled_tile_images_colour_histograms),
+            list(self.labeled_tile_images_colour_histograms.values())
+        ], ['filename', 'image']).T
+        tiling['difference'] = [
+            self._mean_array_diference(
+                self._colour_histograms_from_image(image), np.array(l_image))
+            for l_image in tiling.image
+        ]
+        closest_tiles = tiling.loc[tiling.difference ==
+                                   tiling.difference.min()]
+        closest_tile_index = int(
+            closest_tiles.iloc[0].filename.split('_')[0]) - 1
+        return self.tile_info.iloc[closest_tile_index].letter
+
+    @staticmethod
+    def _mean_array_diference(a: np.ndarray, b: np.ndarray) -> int:
+        return np.sum(np.abs(a - b)) / a.size
 
     @property
     def tile_counts(self) -> pd.DataFrame:
